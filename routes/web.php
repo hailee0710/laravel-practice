@@ -24,7 +24,7 @@ Route::get('/products', [ProductController::class, 'index'])->name('products.ind
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
 // Admin Routes
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/', [App\Http\Controllers\HomeController::class, 'adminHome'])->name('adminHome');
     Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
     Route::get('categories/{category}', [App\Http\Controllers\Admin\CategoryController::class, 'show'])->name('categories.show');

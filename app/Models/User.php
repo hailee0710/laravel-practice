@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role', // Add role attribute
     ];
 
     /**
@@ -38,6 +39,36 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    /**
+     * Check if the user is an admin.
+     *
+     * @return bool
+     */
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if the user is a normal user.
+     *
+     * @return bool
+     */
+    public function isNormalUser()
+    {
+        return $this->role === 'user';
+    }
+
     protected function casts(): array
     {
         return [
