@@ -25,8 +25,11 @@ Route::get('/products/{product}', [ProductController::class, 'show'])->name('pro
 
 // Admin Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', \App\Http\Middleware\CheckRole::class . ':admin'])->group(function () {
+    Route::resources([
+        'categories' => App\Http\Controllers\Admin\CategoryController::class,
+        'products' => App\Http\Controllers\Admin\ProductController::class,
+    ]);
     Route::get('/', [App\Http\Controllers\HomeController::class, 'adminHome'])->name('adminHome');
-    Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
     Route::get('categories/{category}', [App\Http\Controllers\Admin\CategoryController::class, 'show'])->name('categories.show');
     Route::get('categories', [App\Http\Controllers\Admin\CategoryController::class, 'index'])->name('categories.index');
     Route::get('categories/create', [App\Http\Controllers\Admin\CategoryController::class, 'create'])->name('categories.create');
@@ -34,7 +37,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', \App\Http\Middleware
     Route::get('categories/{category}/edit', [App\Http\Controllers\Admin\CategoryController::class, 'edit'])->name('categories.edit');
     Route::put('categories/{category}', [App\Http\Controllers\Admin\CategoryController::class, 'update'])->name('categories.update');
     Route::delete('categories/{category}', [App\Http\Controllers\Admin\CategoryController::class, 'destroy'])->name('categories.destroy');
-    Route::resource('products', App\Http\Controllers\Admin\ProductController::class);
     Route::get('products', [App\Http\Controllers\Admin\ProductController::class, 'index'])->name('products.index');
     Route::get('products/create', [App\Http\Controllers\Admin\ProductController::class, 'create'])->name('products.create');
     Route::post('products', [App\Http\Controllers\Admin\ProductController::class, 'store'])->name('products.store');
