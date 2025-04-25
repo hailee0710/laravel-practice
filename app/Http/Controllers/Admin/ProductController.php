@@ -3,91 +3,103 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Models\Category;
-use Illuminate\Http\Request;
+use App\Services\ProductService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    protected $productService;
+
+    public function __construct(ProductService $productService)
+    {
+        $this->productService = $productService;
+        $this->authorizeResource(Product::class, 'product');
+    }
+
     public function index()
     {
-        $products = Product::all();
+        $products = $this->productService->getAllProducts();
+
+        if (request()->expectsJson()) {
+            return ProductResource::collection($products);
+        }
+
         return view('admin.products.index', compact('products'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function create(): View
     {
         $categories = Category::all();
         return view('admin.products.create', compact('categories'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
-        ]);
+        $product = $this->productService->createProduct(
+            $request->validated(),
+            $request->hasFile('image') ? $request->file('image') : null
+        );
 
-        Product::create($request->all());
+        if ($request->expectsJson()) {
+            return new ProductResource($product);
+        }
 
-        return redirect()->route('products.index')
-                         ->with('success', 'Product created successfully.');
+        return redirect()->route('admin.products.index')
+            ->with('success', 'Product created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Product $product)
     {
+        if (request()->expectsJson()) {
+            return new ProductResource($product);
+        }
+
         return view('admin.products.show', compact('product'));
     }
 
-    /**
-     * Show the form for editing a specified resource.
-     */
-    public function edit(Product $product)
+    public function edit(Product $product): View
     {
         $categories = Category::all();
         return view('admin.products.edit', compact('product', 'categories'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Product $product)
+    public function update(UpdateProductRequest $request, Product $product)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
-        ]);
+        $updated = $this->productService->updateProduct(
+            $product,
+            $request->validated(),
+            $request->hasFile('image') ? $request->file('image') : null
+        );
 
-        $product->update($request->all());
+        if ($request->expectsJson()) {
+            return $updated
+                ? new ProductResource($product)
+                : response()->json(['message' => 'Failed to update product'], 500);
+        }
 
-        return redirect()->route('products.index')
-                         ->with('success', 'Product updated successfully.');
+        return redirect()->route('admin.products.index')
+            ->with('success', 'Product updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Product $product)
     {
-        $product->delete();
+        $deleted = $this->productService->deleteProduct($product);
 
-        return redirect()->route('products.index')
-                         ->with('success', 'Product deleted successfully.');
+        if (request()->expectsJson()) {
+            return response()->json([
+                'message' => $deleted ? 'Product deleted successfully' : 'Failed to delete product'
+            ], $deleted ? 200 : 500);
+        }
+
+        return redirect()->route('admin.products.index')
+            ->with('success', 'Product deleted successfully.');
     }
 }
